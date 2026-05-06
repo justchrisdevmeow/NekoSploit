@@ -3,7 +3,6 @@
 #include <string>
 #include <sstream>
 
-// Forward declarations
 void InitializeHooks();
 void ExecuteScript();
 
@@ -26,12 +25,10 @@ std::string ReadScriptFile() {
 }
 
 DWORD WINAPI MainThread(LPVOID lpParam) {
-    // Allocate console for debugging (optional)
     AllocConsole();
     hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
     ConsolePrint("NekoSploit DLL loaded");
     
-    // Wait for Roblox to fully initialize
     Sleep(8000);
     
     ConsolePrint("[*] Initializing hooks...");
