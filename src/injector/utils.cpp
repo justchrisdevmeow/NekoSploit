@@ -2,9 +2,15 @@
 #include <tlhelp32.h>
 #include <fstream>
 #include <string>
-#include "gui.cpp"
 
-extern HWND hStatus;
+#pragma comment(lib, "comctl32.lib")
+
+// ComboBox macro
+#ifndef ComboBox_GetCurSel
+#define ComboBox_GetCurSel(hWnd) (int)(SNDMSG((hWnd), CB_GETCURSEL, 0, 0))
+#endif
+
+extern HWND hStatus, hComboExample, hMainWindow;
 
 void SetStatus(const char* text) {
     SetWindowTextA(hStatus, text);
@@ -13,7 +19,7 @@ void SetStatus(const char* text) {
 void LoadScriptFile() {
     OPENFILENAMEA ofn = { sizeof(ofn) };
     char file[MAX_PATH] = {0};
-    ofn.hwndOwner = GetActiveWindow();
+    ofn.hwndOwner = hMainWindow;
     ofn.lpstrFilter = "Lua Files\0*.lua\0All Files\0*.*\0";
     ofn.lpstrFile = file;
     ofn.nMaxFile = MAX_PATH;
@@ -22,7 +28,7 @@ void LoadScriptFile() {
     if (GetOpenFileNameA(&ofn)) {
         std::ifstream in(file);
         std::string content((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
-        SetWindowTextA(GetDlgItem(GetActiveWindow(), 1001), content.c_str());
+        SetWindowTextA(GetDlgItem(hMainWindow, 1001), content.c_str());
         SetStatus(("Loaded: " + std::string(file)).c_str());
     }
 }
@@ -30,16 +36,16 @@ void LoadScriptFile() {
 void SaveScriptFile() {
     OPENFILENAMEA ofn = { sizeof(ofn) };
     char file[MAX_PATH] = {0};
-    ofn.hwndOwner = GetActiveWindow();
+    ofn.hwndOwner = hMainWindow;
     ofn.lpstrFilter = "Lua Files\0*.lua\0All Files\0*.*\0";
     ofn.lpstrFile = file;
     ofn.nMaxFile = MAX_PATH;
     ofn.Flags = OFN_OVERWRITEPROMPT;
     
     if (GetSaveFileNameA(&ofn)) {
-        int len = GetWindowTextLengthA(GetDlgItem(GetActiveWindow(), 1001));
+        int len = GetWindowTextLengthA(GetDlgItem(hMainWindow, 1001));
         char* script = new char[len + 1];
-        GetWindowTextA(GetDlgItem(GetActiveWindow(), 1001), script, len + 1);
+        GetWindowTextA(GetDlgItem(hMainWindow, 1001), script, len + 1);
         
         std::ofstream out(file);
         out << script;
@@ -50,12 +56,12 @@ void SaveScriptFile() {
 }
 
 void ClearScript() {
-    SetWindowTextA(GetDlgItem(GetActiveWindow(), 1001), "");
+    SetWindowTextA(GetDlgItem(hMainWindow, 1001), "");
     SetStatus("Cleared.");
 }
 
 void LoadExampleScript() {
-    int idx = ComboBox_GetCurSel(GetDlgItem(GetActiveWindow(), 1006));
+    int idx = ComboBox_GetCurSel(GetDlgItem(hMainWindow, 1006));
     if (idx == CB_ERR) return;
     
     const char* examples[] = {
@@ -65,8 +71,8 @@ void LoadExampleScript() {
         "-- Speed\nlocal plr = game.Players.LocalPlayer\nif plr.Character then\n    local hrp = plr.Character.HumanoidRootPart\n    local bv = Instance.new(\"BodyVelocity\")\n    bv.MaxForce = Vector3.new(1,1,1)*1e5\n    bv.Velocity = Vector3.new(100,0,100)\n    bv.Parent = hrp\n    wait(3)\n    bv:Destroy()\nend"
     };
     
-    SetWindowTextA(GetDlgItem(GetActiveWindow(), 1001), examples[idx]);
-    SetStatus(("Loaded example " + std::to_string(idx + 1)).c_str());
+    SetWindowTextA(GetDlgItem(hMainWindow, 1001), examples[idx]);
+    SetStatus("Loaded example");
 }
 
 DWORD GetProcessIdByName(const char* procName) {
@@ -125,14 +131,14 @@ bool InjectDLL(DWORD pid, const char* dllPath) {
 }
 
 void InjectScript() {
-    int len = GetWindowTextLengthA(GetDlgItem(GetActiveWindow(), 1001));
+    int len = GetWindowTextLengthA(GetDlgItem(hMainWindow, 1001));
     if (len == 0) {
         SetStatus("No script to inject.");
         return;
     }
     
     char* script = new char[len + 1];
-    GetWindowTextA(GetDlgItem(GetActiveWindow(), 1001), script, len + 1);
+    GetWindowTextA(GetDlgItem(hMainWindow, 1001), script, len + 1);
     
     std::ofstream out("temp_script.lua");
     out << script;
@@ -146,7 +152,11 @@ void InjectScript() {
         return;
     }
     
-    if (InjectDLL(pid, "nekosploit.dll")) {
+    char dllPath[MAX_PATH];
+    GetCurrentDirectoryA(MAX_PATH, dllPath);
+    strcat(dllPath, "\\nekosploit.dll");
+    
+    if (InjectDLL(pid, dllPath)) {
         SetStatus("Injected! Script sent to Roblox.");
     } else {
         SetStatus("Injection failed.");
