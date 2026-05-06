@@ -5,6 +5,17 @@
 
 #pragma comment(lib, "comctl32.lib")
 
+// ComboBox macros
+#ifndef ComboBox_AddString
+#define ComboBox_AddString(hWnd, lpsz) (int)(SNDMSG((hWnd), CB_ADDSTRING, 0, (LPARAM)(lpsz)))
+#endif
+#ifndef ComboBox_SetCurSel
+#define ComboBox_SetCurSel(hWnd, index) (int)(SNDMSG((hWnd), CB_SETCURSEL, (WPARAM)(index), 0))
+#endif
+#ifndef ComboBox_GetCurSel
+#define ComboBox_GetCurSel(hWnd) (int)(SNDMSG((hWnd), CB_GETCURSEL, 0, 0))
+#endif
+
 #define ID_EDIT_SCRIPT   1001
 #define ID_BTN_INJECT    1002
 #define ID_BTN_LOAD      1003
@@ -16,7 +27,7 @@
 
 HWND hEditScript, hStatus, hComboExample, hMainWindow;
 
-// Forward declarations from other files
+// Forward declarations
 extern void SetStatus(const char* text);
 extern void LoadScriptFile();
 extern void SaveScriptFile();
@@ -32,7 +43,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             
             hEditScript = CreateWindowExA(WS_EX_CLIENTEDGE, "EDIT", "",
                 WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_AUTOVSCROLL | ES_AUTOHSCROLL,
-                10, 10, 480, 250, hWnd, (HMENU)ID_EDIT_SCRIPT, NULL, NULL);
+                10, 35, 480, 225, hWnd, (HMENU)ID_EDIT_SCRIPT, NULL, NULL);
             
             CreateWindowExA(0, "BUTTON", "Load", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
                 10, 270, 70, 30, hWnd, (HMENU)ID_BTN_LOAD, NULL, NULL);
