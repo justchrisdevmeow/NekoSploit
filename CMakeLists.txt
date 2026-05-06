@@ -13,7 +13,7 @@ add_executable(neko_injector WIN32
 )
 
 target_compile_definitions(neko_injector PRIVATE _WIN32_WINNT=0x0601)
-target_link_libraries(neko_injector comctl32 user32 gdi32)
+target_link_libraries(neko_injector comctl32 user32 gdi32 psapi)
 
 # DLL
 add_library(nekosploit SHARED
@@ -23,8 +23,8 @@ add_library(nekosploit SHARED
 )
 
 target_compile_definitions(nekosploit PRIVATE _WIN32_WINNT=0x0601)
-target_link_libraries(nekosploit)
+target_link_libraries(nekosploit psapi)
 
-# Set output directory
+# Set both to output to the same folder
 set_target_properties(neko_injector PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-set_target_properties(nekosploit PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set_target_properties(nekosploit PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
