@@ -1,6 +1,9 @@
 #include <windows.h>
+#include <psapi.h>
 #include <string>
 #include "offsets.cpp"
+
+#pragma comment(lib, "psapi.lib")
 
 typedef int (*luaL_loadstring_t)(void* L, const char* s);
 typedef int (*lua_pcall_t)(void* L, int nargs, int nresults, int errfunc);
@@ -45,14 +48,15 @@ void FindLuaFunctions() {
     
     ConsolePrint("[*] Scanning for Lua functions...");
     
-    // Use offsets from offsets.cpp
     uintptr_t base = (uintptr_t)roblox;
     
+    #ifdef OFFSET_luaL_loadstring
     if (OFFSET_luaL_loadstring != 0) {
         luaL_loadstring = (luaL_loadstring_t)(base + OFFSET_luaL_loadstring);
         ConsolePrint("[+] luaL_loadstring found at offset");
-    } else {
-        // Fallback to pattern scan
+    } else
+    #endif
+    {
         const char* pattern = "\x55\x8B\xEC\x83\xE4\xF8\x83\xEC\x0C\x53\x56\x57\x8B\x75\x08\x85\xF6";
         const char* mask = "xxxxxxxxxxxxxxxxx";
         uintptr_t addr = PatternScan(roblox, pattern, mask);
@@ -62,10 +66,13 @@ void FindLuaFunctions() {
         }
     }
     
+    #ifdef OFFSET_lua_pcall
     if (OFFSET_lua_pcall != 0) {
         lua_pcall = (lua_pcall_t)(base + OFFSET_lua_pcall);
         ConsolePrint("[+] lua_pcall found at offset");
-    } else {
+    } else
+    #endif
+    {
         const char* pattern = "\x55\x8B\xEC\x83\xEC\x14\x53\x56\x57\x8B\x7D\x08";
         const char* mask = "xxxxxxxxxxxx";
         uintptr_t addr = PatternScan(roblox, pattern, mask);
@@ -75,10 +82,13 @@ void FindLuaFunctions() {
         }
     }
     
+    #ifdef OFFSET_lua_getglobal
     if (OFFSET_lua_getglobal != 0) {
         lua_getglobal = (lua_getglobal_t)(base + OFFSET_lua_getglobal);
         ConsolePrint("[+] lua_getglobal found at offset");
-    } else {
+    } else
+    #endif
+    {
         const char* pattern = "\x55\x8B\xEC\x83\xEC\x0C\x53\x56\x57";
         const char* mask = "xxxxxxxxx";
         uintptr_t addr = PatternScan(roblox, pattern, mask);
@@ -93,7 +103,7 @@ void* FindLuaState() {
     HMODULE roblox = GetModuleHandleA("RobloxPlayerBeta.exe");
     if (!roblox) return nullptr;
     
-    // Try offset method first
+    #ifdef OFFSET_LuaState
     if (OFFSET_LuaState != 0) {
         uintptr_t base = (uintptr_t)roblox;
         void** luaStatePtr = (void**)(base + OFFSET_LuaState);
@@ -101,9 +111,7 @@ void* FindLuaState() {
             return *luaStatePtr;
         }
     }
-    
-    // Alternative: get from luaL_loadstring first parameter when called
-    // This is more complex and requires hooking
+    #endif
     
     ConsolePrint("[!] Could not find Lua state");
     return nullptr;
@@ -127,9 +135,7 @@ void ExecuteScript() {
         ConsolePrint("[+] Lua state found");
     }
     
-    // Load the string
     if (luaL_loadstring(lua_state, script.c_str()) == 0) {
-        // Execute it
         if (lua_pcall(lua_state, 0, 0, 0) == 0) {
             ConsolePrint("[+] Script executed successfully");
         } else {
