@@ -1,9 +1,10 @@
 #include <windows.h>
 #include <tlhelp32.h>
+#include <psapi.h>
 #include <fstream>
 #include <string>
-#include <vector>
-#include "gui.cpp"
+
+#pragma comment(lib, "psapi.lib")
 
 extern HWND hStatus;
 extern void SetStatus(const char* text);
@@ -83,7 +84,6 @@ void ScanOffsets() {
                     {"luaL_loadstring", "\x55\x8B\xEC\x83\xE4\xF8\x83\xEC\x0C\x53\x56\x57\x8B\x75\x08\x85\xF6", "xxxxxxxxxxxxxxxxx", 0},
                     {"lua_pcall", "\x55\x8B\xEC\x83\xEC\x14\x53\x56\x57\x8B\x7D\x08", "xxxxxxxxxxxx", 0},
                     {"lua_getglobal", "\x55\x8B\xEC\x83\xEC\x0C\x53\x56\x57", "xxxxxxxxx", 0},
-                    {"lua_pushstring", "\x55\x8B\xEC\x83\xEC\x10\x53\x56\x57\x8B\x7D\x08", "xxxxxxxxxxxx", 0},
                 };
                 
                 HMODULE roblox = hMods[i];
@@ -100,21 +100,17 @@ void ScanOffsets() {
                 }
                 
                 if (allFound) {
-                    // Write directly to offsets.cpp
-                    std::ofstream out("../../src/dll/offsets.cpp");
+                    std::ofstream out("offsets_generated.h");
                     out << "// Generated automatically by NekoSploit scanner\n";
-                    out << "// DO NOT EDIT MANUALLY - Run scanner again to update\n\n";
-                    
+                    out << "// Copy these values to src/dll/offsets.cpp\n\n";
+                    out << "#pragma once\n\n";
                     for (auto& off : offsets) {
                         out << "#define OFFSET_" << off.name << " 0x" << std::hex << off.offset << "\n";
                     }
-                    
-                    // Lua state offset (estimated from luaL_loadstring)
                     out << "\n// Lua state offset (may need manual adjustment)\n";
                     out << "#define OFFSET_LuaState 0x00000000\n";
                     out.close();
-                    
-                    SetStatus("Offsets automatically updated in dll/offsets.cpp");
+                    SetStatus("Offsets saved to offsets_generated.h");
                     return;
                 } else {
                     SetStatus("Some patterns not found. Roblox may have updated.");
